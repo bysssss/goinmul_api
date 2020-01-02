@@ -1,0 +1,67 @@
+<!DOCTYPE configuration>
+<configuration>
+	<!-- include resource="org/springframework/boot/logging/logback/base.xml"/-->
+	
+	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<charset>UTF-8</charset>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %level [%thread] [%logger{35}:%line] [%X{clientIp}] [%X{mdcKey}] ::: %msg%n</pattern>
+		</encoder>
+	</appender>
+	
+	<!-- timestamp key="time" datePattern="yyMMddHH"/>
+	<appender name="FILE" class="ch.qos.logback.core.FileAppender">
+		<file>C:\\Users\\Administrator\\Desktop\\msg-${time}.txt</file>
+		<append>true</append>
+  		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<charset>UTF-8</charset>
+            <pattern>%msg%n</pattern>
+		</encoder>
+	</appender -->
+	
+	<!-- appender name="ROLLING2" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>C:\\Users\\Administrator\\Desktop\\msg.txt</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>C:\\Users\\Administrator\\Desktop\\test\\msg-%d{yyMMdd-HHmm}.txt</fileNamePattern>
+			<maxHistory>90</maxHistory>
+		</rollingPolicy>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<charset>UTF-8</charset>
+			<pattern>%msg%n</pattern>
+		</encoder>
+	</appender -->
+	
+	<appender name="SIFT" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<timeout>90 minutes</timeout>
+        <maxAppenderCount>2</maxAppenderCount>
+		<discriminator>
+			<key>hourlytime</key>
+			<defaultValue>NA</defaultValue>
+		</discriminator>
+    	<sift>
+			<appender name="SIFT-${hourlytime}" class="ch.qos.logback.core.FileAppender">
+        		<file>C:\\Users\\Administrator\\Desktop\\sift-${hourlytime}.txt</file>
+				<append>false</append>
+				<layout class="ch.qos.logback.classic.PatternLayout">
+					<charset>UTF-8</charset>
+					<pattern>%msg%n</pattern>
+				</layout>
+			</appender>
+		</sift>
+	</appender>
+	
+	<root level="INFO">
+		<appender-ref ref="CONSOLE" />
+	</root>
+	
+	<logger name="org.springframework" level="INFO"/>
+	<logger name="org.hibernate" level="INFO"/>
+	<logger name="org.apache" level="INFO"/>
+	
+	<logger name="com.monnit" level="DEBUG"/>
+	<logger name="com.skp" level="INFO"/>
+	
+	<!-- logger name="com.skp.airmon.api.XXX" level="INFO" additivity="false">
+		<appender-ref ref="SIFT"/>
+	</logger -->
+</configuration>
