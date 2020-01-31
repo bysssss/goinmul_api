@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bysssss.goinmul.api.model.mysql.iot">
+	
+	<resultMap type="GrpSenEleData" id="GrpSenEleData">
+		<result column="SEQ" property="group.seq"/>
+		<result column="GROUP_ID" property="group.groupId"/>
+		<result column="GROUP_NAME" property="group.groupName"/>
+		<collection column="{testSeq=SEQ,testTable=THE_TABLE}" property="sensorList" javaType="java.util.List" ofType="SenEleData" select="hasManySens" autoMapping="true"/>
+	</resultMap>
+	<select id="hasManySens" parameterType="java.util.Map" resultMap="SenEleData">
+    	select 
+    		sens.seq, sens.sensor_id, sens.sensor_name, sens.sensor_code, #{testTable} AS THE_TABLE 
+    	from 
+    		TB_FADASHBOARD_SENS_GRP_MAP as map 
+    	join 
+    		TB_FADASHBOARD_SENSOR as sens on map.SENSOR_SEQ=sens.SEQ 
+    	where 
+    		map.group_seq = #{testSeq} and sens.USE_YN='Y' and sens.AUTH_YN='Y' 
+    	order by 
+    		sens.sensor_name asc 
+	</select>
+	<select id="selectGrpSenEle" parameterType="String" resultMap="GrpSenEleData">
+		SELECT 
+        	SEQ, 
+        	GROUP_ID, 
+        	GROUP_NAME, 
+        	#{table} AS THE_TABLE 
+        FROM 
+        	TB_FADASHBOARD_GROUP 
+		WHERE 
+			BUSINESS_ID=#{businessId} 
+		ORDER BY 
+			GROUP_NAME asc 
+    </select>
+	
+	<resultMap type="SenEleData" id="SenEleData">
+		<result column="SEQ" property="sensor.seq"/>
+		<result column="SENSOR_ID" property="sensor.sensorId"/>
+		<result column="SENSOR_NAME" property="sensor.sensorName"/>
+		<result column="SENSOR_CODE" property="sensor.sensorCode"/>
+		<collection column="{testSeq=SEQ,testTable=THE_TABLE}" property="elementList" javaType="java.util.List" ofType="java.util.Map" select="hasManyEle" autoMapping="true" />
+	</resultMap>
+	<select id="hasManyEle" parameterType="java.util.Map" resultType="java.util.Map">
+    	SELECT 
+        	A.elements, A.elementName, A.elementCode as elementPreset 
+        	C.STATS_INT0 as anomalyCode, C.STATS_INT1 as anomalyScore, DATE_FORMAT(C.OBSERVED_AT, "%Y/%m/%d %H:%i:%S") as anomalyAt 
+        FROM (
+	        SELECT
+	        	sens.SEQ as seq, 
+				sens.SENSOR_ID as id, 
+				sens.SENSOR_NAME as name, 
+				sens.SENSOR_CODE as elementCode, 
+				ele.sensor_elements as elements, 
+				ele.element_name as elementName 
+			FROM 
+				TB_FADASHBOARD_SENSOR as sens 
+			INNER JOIN 
+				TB_FADASHBOARD_SENS_ELMNTS as ele ON sens.SENSOR_CODE=ele.SENSOR_CODE and ele.USE_YN='Y' 
+			WHERE 
+				sens.SEQ=#{testSeq}
+		) as A 
+		LEFT JOIN ${testTable} as C ON C.seq = (
+			select seq from ${testTable} as stats where stats.stats_type='A' and stats.range_type='MIN5' and stats.sensor_id=A.id and stats.elements=A.elements order by seq desc limit 1
+			)
+	</select>
+	<select id="selectNullGrpSenEle" parameterType="String" resultMap="SenEleData">
+		SELECT 
+			A.*, B.GROUP_SEQ, #{table} AS THE_TABLE 
+		FROM (
+			SELECT 
+	        	SEQ, 
+	        	SENSOR_ID, 
+	        	SENSOR_NAME, 
+	        	SENSOR_CODE 
+	        FROM 
+	        	TB_FADASHBOARD_SENSOR
+	        WHERE 
+				BUSINESS_ID=#{businessId} AND USE_YN='Y' AND AUTH_YN='Y' 
+			ORDER BY 
+				SEQ asc 
+		) as A 
+		LEFT JOIN 
+			TB_FADASHBOARD_SENS_GRP_MAP as B ON A.SEQ=B.SENSOR_SEQ 
+		WHERE 
+			B.GROUP_SEQ IS NULL 
+    </select>
+    
+    <insert id="insertSensGrpMapList" parameterType="java.util.ArrayList">
+        INSERT INTO 
+        	TB_FADASHBOARD_SENS_GRP_MAP(SENSOR_SEQ, GROUP_SEQ) 
+        VALUES 
+        <foreach collection="sensGrpMapList" item="item" separator=" , " >
+			( #{item.sensorSeq}, #{item.groupSeq} ) 
+    	</foreach>
+    </insert>
+    
+    <insert id="upsertSensGrpMap" parameterType="SensGrpMapData">
+    	INSERT INTO 
+        	TB_FADASHBOARD_SENS_GRP_MAP(SENSOR_SEQ, GROUP_SEQ) 
+        VALUES
+        	( #{sensGrpMap.sensorSeq}, #{sensGrpMap.groupSeq} )
+    	ON DUPLICATE KEY UPDATE 
+    		GROUP_SEQ = #{sensGrpMap.groupSeq}, 
+    		UPDATE_AT = CURRENT_TIMESTAMP
+    </insert>
+    
+    <select id="selectFaqList" resultType="NoticeData">
+		SELECT 
+        	* 
+        FROM 
+        	TB_FADASHBOARD_NOTICE 
+		WHERE  
+			<choose>
+			<when test="faqType == 'FAQ1'">
+			 NOTICE_TYPE LIKE 'FAQ%'
+			</when>
+			<when test="faqType == 'FAQ2'">
+			 NOTICE_TYPE='FAQ2'
+			</when>
+			<when test="faqType == 'FAQ3'">
+			 NOTICE_TYPE='FAQ3'
+			</when>
+			<otherwise>
+			 NOTICE_TYPE LIKE 'FAQ%'
+			</otherwise>
+			</choose>
+			AND NOTICE_YN='Y' 
+		ORDER BY 
+			SEQ asc
+    </select>
+    
+    <select id="selectSensorList" parameterType="java.util.Map" resultType="SensorData">
+        SELECT 
+        	sens.*  
+        FROM 
+        	TB_FADASHBOARD_SENSOR as sens
+        LEFT JOIN 
+			TB_FADASHBOARD_SENS_GRP_MAP as map ON sens.SEQ=map.SENSOR_SEQ 
+		LEFT JOIN 
+			TB_FADASHBOARD_GROUP as grp on map.GROUP_SEQ=grp.SEQ 
+        WHERE 
+        	sens.BUSINESS_ID=#{businessId} AND USE_YN='Y' AND AUTH_YN='Y' 
+			<if test="groupSeq != null and groupSeq == 0">
+				AND grp.seq is null
+			</if>
+			<if test="groupSeq != null and groupSeq != 0">
+				AND grp.seq=#{groupSeq}
+			</if>
+        ORDER BY 
+        	sens.SENSOR_NAME asc 
+    </select>
+    
+    <insert id="insertSensorList" parameterType="java.util.ArrayList" useGeneratedKeys="true" keyColumn="SEQ" keyProperty="seq">
+    	<selectKey keyProperty="seq" resultType="Long" order="BEFORE"></selectKey>
+        INSERT INTO 
+        	TB_FADASHBOARD_SENSOR(
+        	BUSINESS_ID, SENSOR_ID, NETWORK_TYPE, SENSOR_NAME, SENSOR_TYPE, SENSOR_CODE, SENSOR_CYCLE, 
+        	BATTERY_YN, BATTERY_CAPACITY, SERIAL, HW_VERSION, FW_VERSION, MANUFACTURER, HT, LAT, LON, ADDR, ADDR_MORE, ADDR_SIDO, ADDR_GUGUN, ADDR_DONG, ADDR_RI, USE_YN, FIX_YN, INOUT_YN, INSTALL_AT) 
+        VALUES 
+        <foreach item="item" collection="list" separator="," >
+			( #{item.businessId}, #{item.sensorId}, #{item.networkType}, #{item.sensorName}, #{item.sensorType}, #{item.sensorCode}, #{item.sensorCycle}, 
+			  #{item.batteryYn}, #{item.batteryCapacity}, #{item.serial}, #{item.hwVersion}, #{item.fwVersion}, #{item.manufacturer}, 
+			  #{item.ht}, #{item.lat}, #{item.lon}, #{item.addr}, #{item.addrMore}, '시/도', '구/군', '동', '리', 'Y', #{item.fixYn}, #{item.inoutYn}, #{item.installAt} ) 
+    	</foreach>
+    </insert>
+    
+    <resultMap type="ZMonitorData" id="ZMonitorData">
+		<result column="SEQ" property="sensor.seq"/>
+		<result column="SENSOR_ID" property="sensor.sensorId"/>
+		<result column="SENSOR_NAME" property="sensor.sensorName"/>
+		<result column="ELEMENTS" property="elements"/>
+		<result column="ELEMENT_NAME" property="elementName"/>
+		<result column="CC" property="ccqcStats.statsInt0"/>
+		<result column="QC" property="ccqcStats.statsInt1"/>
+		<result column="ANOMALY_CODE" property="anmStats.statsInt0"/>
+		<result column="ANOMALY_SCORE" property="anmStats.statsInt1"/>
+	</resultMap>
+	<select id="selectMonitorDataList" parameterType="java.util.Map" resultMap="ZMonitorData">
+        SELECT 
+        	sens.SEQ, 
+			sens.SENSOR_ID, 
+			sens.SENSOR_NAME, 
+			ele.sensor_elements as ELEMENTS, 
+			ele.element_name as ELEMENT_NAME, 
+			ccqc.stats_int0 as CC, 
+			ccqc.stats_int1 as QC, 
+			anm.stats_int0 as ANOMALY_CODE, 
+			anm.stats_int1 as ANOMALY_SCORE 
+		FROM 
+			${table} as ccqc 
+		INNER JOIN 
+			TB_FADASHBOARD_SENSOR as sens ON ccqc.sensor_id=sens.sensor_id and sens.USE_YN='Y' and sens.AUTH_YN='Y'
+		INNER JOIN 
+			TB_FADASHBOARD_SENS_ELMNTS as ele ON sens.SENSOR_CODE=ele.SENSOR_CODE and ccqc.ELEMENTS=ele.SENSOR_ELEMENTS and ele.USE_YN='Y' 
+		LEFT JOIN 
+			${table} as anm ON ccqc.sensor_id=anm.sensor_id AND ccqc.elements=anm.elements AND ccqc.OBSERVED_AT=anm.OBSERVED_AT AND anm.stats_type='A' AND ccqc.range_type=anm.range_type
+		WHERE 
+			ccqc.BUSINESS_ID=#{map.businessId} and 
+			ccqc.stats_type=#{map.statsType} and 
+			ccqc.range_type=#{map.rangeType} and 
+			ccqc.OBSERVED_AT between #{map.fromAt} and #{map.toAt}
+    </select>
+	
+	<resultMap type="ZIndicatorData" id="ZIndicatorData">
+		<result column="SEQ" property="sensor.seq"/>
+		<result column="BUSINESS_ID" property="sensor.businessId"/>
+		<result column="SENSOR_ID" property="sensor.sensorId"/>
+		<result column="SENSOR_NAME" property="sensor.sensorName"/>
+		<result column="SENSOR_CYCLE" property="sensor.sensorCycle"/>
+		<result column="LAT" property="sensor.lat"/>
+		<result column="LON" property="sensor.lon"/>
+		<result column="ADDR" property="sensor.addr"/>
+		<result column="ELEMENTS" property="elements"/>
+		<result column="ELEMENT_NAME" property="elementName"/>
+		<result column="VALUE" property="valStats.statsDbl0"/>
+		<result column="OBSERVED_AT" property="valStats.observedAt"/>
+		<result column="ANOMALY_CODE" property="anmStats.statsInt0"/>
+		<result column="ANOMALY_SCORE" property="anmStats.statsInt1"/>
+		<result column="ANOMALY_AT" property="anmStats.observedAt"/>
+		<result column="ALARM_AT" property="alarmAt"/>
+		<association column="{testSeq=SEQ}" property="groupName" javaType="String" select="hasOneGrp" autoMapping="true" />
+		<association column="{testId=SENSOR_ID,testEle=ELEMENTS}" property="statsAnm" javaType="StatsData" select="hasOneLatestAnm" autoMapping="true" />
+	</resultMap>
+	<select id="hasOneGrp" parameterType="java.util.Map" resultType="String">
+    	select grp.group_name from TB_FADASHBOARD_SENS_GRP_MAP as map join TB_FADASHBOARD_GROUP as grp on map.GROUP_SEQ=grp.SEQ where map.sensor_seq=#{testSeq}
+	</select>
+	<select id="hasOneLatestAnm" parameterType="java.util.Map" resultType="StatsData">
+    	select 
+    		* 
+    	from 
+    		TB_FADASHBOARD_IOT_STATS 
+    	where 
+    		stats_type = 'A' and range_type = 'MIN5' and 
+    		sensor_id = #{testId} and elements = #{testEle}
+    	order by 
+    		seq desc limit 1
+	</select>
+	<select id="selectIndicatorDataList" parameterType="java.util.Map" resultMap="ZIndicatorData">
+        SELECT 
+        	A.SEQ, A.SENSOR_ID, A.SENSOR_NAME, A.SENSOR_CYCLE, A.LAT, A.LON, A.ADDR, A.SENSOR_CODE, A.ELEMENTS, A.ELEMENT_NAME, 
+        	B.STATS_DBL0 as VALUE, B.OBSERVED_AT as OBSERVED_AT, 
+        	C.STATS_INT0 as ANOMALY_CODE, C.STATS_INT1 as ANOMALY_SCORE, C.OBSERVED_AT as ANOMALY_AT, 
+        	D.CREATE_AT as ALARM_AT 
+        FROM (
+	        SELECT
+	        	sens.SEQ, 
+				sens.SENSOR_ID, 
+				sens.SENSOR_NAME, 
+				sens.SENSOR_CYCLE,
+				sens.LAT, 
+				sens.LON, 
+				sens.ADDR,  
+				sens.SENSOR_CODE, 
+				ele.sensor_elements as ELEMENTS, 
+				ele.element_name as ELEMENT_NAME 
+			FROM 
+				TB_FADASHBOARD_SENSOR as sens 
+			INNER JOIN 
+				TB_FADASHBOARD_SENS_ELMNTS as ele ON sens.SENSOR_CODE=ele.SENSOR_CODE and ele.USE_YN='Y' 
+			WHERE 
+				sens.BUSINESS_ID=#{map.businessId} AND sens.USE_YN='Y' AND sens.AUTH_YN='Y' 
+		) as A 
+		LEFT JOIN ${table} as B ON B.seq = (
+			select seq from ${table} as stats where stats.stats_type='VAL' and stats.range_type='MIN5' and stats.sensor_id=A.sensor_id and stats.elements=A.elements order by seq desc limit 1
+			)
+		LEFT JOIN ${table} as C ON C.seq = (
+			select seq from ${table} as stats where stats.stats_type='A' and stats.range_type='MIN5' and stats.sensor_id=A.sensor_id and stats.elements=A.elements order by seq desc limit 1
+			)
+		LEFT JOIN TB_FADASHBOARD_ALARM as D ON D.seq = (
+			select seq from TB_FADASHBOARD_ALARM as alrm where alrm.sensor_seq=A.seq and alrm.sensor_elements=A.elements order by seq desc limit 1
+			)
+    </select>
+	
+	<resultMap type="ZDetectorData" id="ZDetectorData">
+		<result column="SEQ" property="sensor.seq"/>
+		<result column="BUSINESS_ID" property="sensor.businessId"/>
+		<result column="SENSOR_ID" property="sensor.sensorId"/>
+		<result column="SENSOR_NAME" property="sensor.sensorName"/>
+		<result column="SENSOR_CYCLE" property="sensor.sensorCycle"/>
+		<result column="LAT" property="sensor.lat"/>
+		<result column="LON" property="sensor.lon"/>
+		<result column="ADDR" property="sensor.addr"/>
+		<result column="ELEMENTS" property="elements"/>
+		<result column="ELEMENT_NAME" property="elementName"/>
+		<result column="VALUE" property="valStats.statsDbl0"/>
+		<result column="OBSERVED_AT" property="valStats.observedAt"/>
+		<result column="ANOMALY_CODE" property="anmStats.statsInt0"/>
+		<result column="ANOMALY_SCORE" property="anmStats.statsInt1"/>
+		<result column="ANOMALY_AT" property="anmStats.observedAt"/>
+		<result column="ALARM_AT" property="alarmAt"/>
+		<result column="GROUP_NAME" property="groupName"/>
+	</resultMap>
+	<select id="selectDetectorDataList" parameterType="java.util.Map" resultMap="ZDetectorData">
+        SELECT * 
+    	FROM (
+	        SELECT 
+	        	A.SEQ, A.SENSOR_ID, A.SENSOR_NAME, A.SENSOR_CYCLE, A.LAT, A.LON, A.ADDR, A.SENSOR_CODE, A.ELEMENTS, A.ELEMENT_NAME, 
+	        	B.STATS_DBL0 as VALUE, B.OBSERVED_AT as OBSERVED_AT, 
+	        	C.STATS_INT0 as ANOMALY_CODE, C.STATS_INT1 as ANOMALY_SCORE, C.OBSERVED_AT as ANOMALY_AT, 
+	        	D.CREATE_AT as ALARM_AT, 
+	        	E.GROUP_NAME as GROUP_NAME 
+	        FROM (
+		        SELECT
+		        	sens.SEQ, 
+					sens.SENSOR_ID, 
+					sens.SENSOR_NAME, 
+					sens.SENSOR_CYCLE,
+					sens.LAT, 
+					sens.LON, 
+					sens.ADDR,  
+					sens.SENSOR_CODE, 
+					ele.sensor_elements as ELEMENTS, 
+					ele.element_name as ELEMENT_NAME 
+				FROM 
+					TB_FADASHBOARD_SENSOR as sens 
+				INNER JOIN 
+					TB_FADASHBOARD_SENS_ELMNTS as ele ON sens.SENSOR_CODE=ele.SENSOR_CODE and ele.USE_YN='Y' 
+				WHERE 
+					sens.BUSINESS_ID=#{map.businessId} AND sens.USE_YN='Y' AND sens.AUTH_YN='Y' 
+			) as A 
+			LEFT JOIN ${table} as B ON B.seq = (
+				select seq from ${table} as stats where stats.stats_type='VAL' and stats.range_type='MIN5' and stats.sensor_id=A.sensor_id and stats.elements=A.elements order by seq desc limit 1
+				)
+			LEFT JOIN ${table} as C ON C.seq = (
+				select seq from ${table} as stats where stats.stats_type='A' and stats.range_type='MIN5' and stats.sensor_id=A.sensor_id and stats.elements=A.elements order by seq desc limit 1
+				)
+			LEFT JOIN TB_FADASHBOARD_ALARM as D ON D.seq = (
+				select seq from TB_FADASHBOARD_ALARM as alrm where alrm.sensor_seq=A.seq and alrm.sensor_elements=A.elements order by seq desc limit 1
+				)
+			LEFT JOIN TB_FADASHBOARD_GROUP as E ON E.seq = (
+            	select group_seq from TB_FADASHBOARD_SENS_GRP_MAP as sgmap where sgmap.sensor_seq=A.seq limit 1
+            	)
+		) as Total 
+		WHERE 
+			Total.SEQ is not null 
+			<if test="map.anomalyCode == 0">
+			AND Total.ANOMALY_CODE=#{map.anomalyCode}
+			</if>
+			<if test="map.anomalyCode == 1">
+			AND Total.ANOMALY_CODE=#{map.anomalyCode}
+			</if>
+			<if test="map.anomalyCode == 2">
+			AND (Total.ANOMALY_CODE=#{map.anomalyCode} OR Total.ANOMALY_CODE is null)
+			</if>
+		ORDER BY
+			<choose>
+			<when test="map.sort == 'SENSOR_NAME'">
+			Total.SENSOR_NAME 
+			</when>
+			<when test="map.sort == 'SENSOR_ID'">
+			Total.SENSOR_ID 
+			</when>
+			<when test="map.sort == 'VALUE'">
+			Total.VALUE 
+			</when>
+			<when test="map.sort == 'ANOMALY_SCORE'">
+			Total.ANOMALY_SCORE 
+			</when>
+			<when test="map.sort == 'GROUP_NAME'">
+			Total.GROUP_NAME 
+			</when>
+			<otherwise>
+			Total.SENSOR_NAME 
+			</otherwise>
+            </choose>
+            <choose>
+			<when test="map.order == 'ASC'">
+			 asc
+			</when>
+			<when test="map.order == 'DESC'">
+			 desc
+			</when>
+			<otherwise>
+			 asc
+			</otherwise>
+            </choose>
+			LIMIT #{map.skip},#{map.size}
+    </select>
+    
+    <update id="updateMember" parameterType="com.weatherplanet.fadashboard.api.model.db2.member.data.MemberData">
+    	UPDATE  
+        	TB_FADASHBOARD_MEMBER 
+        SET
+        	<if test="memberData.memberPw != null">
+				MEMBER_PW = #{memberData.memberPw, typeHandler=com.weatherplanet.fadashboard.api.model.db2.member.typehandler.UserPwTypeHandler},
+			</if>
+			<if test="memberData.passwordAt != null">
+				PASSWORD_AT = #{memberData.passwordAt},
+			</if>
+        	MEMBER_NAME = #{memberData.memberName, typeHandler=com.weatherplanet.fadashboard.api.model.db2.member.typehandler.UserInfoTypeHandler},
+        	MEMBER_DESC = #{memberData.memberDesc},
+        	CELLPHONE = #{memberData.cellphone, typeHandler=com.weatherplanet.fadashboard.api.model.db2.member.typehandler.UserInfoTypeHandler},
+        	POSITION = #{memberData.position},
+        	TELEPHONE = #{memberData.telephone, typeHandler=com.weatherplanet.fadashboard.api.model.db2.member.typehandler.UserInfoTypeHandler},
+    		UPDATE_AT = CURRENT_TIMESTAMP
+    	WHERE 
+    		SEQ = #{memberData.seq} 
+    </update>
+    
+</mapper>

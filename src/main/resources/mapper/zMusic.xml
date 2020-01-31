@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bysssss.goinmul.api.model.mysql.music">
+	
+	<resultMap id="genreMap" type="GenreDto" autoMapping="true">
+		<result column="genre_id" property="id"/>
+		<result column="genre_nm" property="name"/>
+		<result column="genre_type" property="genreType"/>
+		<result column="disp_sn" property="priority"/>
+		<result column="total_count" property="totalCount"/>
+		<association column="{gnrId=genre_id}" property="album" javaType="AlbumDto"  
+		select="selectGenreAlbumByGenreId" autoMapping="true" />
+	</resultMap>
+	<select id="selectGenre" resultMap="genreMap">
+		select 
+			gen.genre_id, gen.genre_nm, gen.genre_type, gen.disp_sn, chnl.chnl_id, chnl.album_id, count(*) as total_count
+    	from 
+    		tb_genre as gen 
+    	inner join 
+    		tb_map_genre_chnl as gen_chnl on gen.genre_id=gen_chnl.genre_id
+    	inner join 
+    		tb_chnl as chnl on gen_chnl.chnl_id=chnl.chnl_id
+		where 
+			gen.disp_status_type ='Y' and chnl.disp_status_type = 'Y'
+		group by 
+			gen.genre_id
+		order by 
+			gen.disp_sn
+	</select>
+	<select id="selectGenreAlbumByGenreId" parameterType="java.util.Map" resultMap="albumMap">
+    	select 
+    		album_id, title 
+    	from 
+    		ted_album 
+    	where 
+    		album_id = (
+    			select chnl.album_id
+    			from tb_map_genre_chnl as gen_chnl 
+    			inner join tb_chnl as chnl on gen_chnl.chnl_id=chnl.chnl_id 
+				where chnl.disp_status_type='Y' and genre_id=#{gnrId}
+				order by gen_chnl.disp_sn
+				limit 1
+    		)
+	</select>
+	
+	<resultMap id="hottestWeeklyMap" type="HottestMusicListDto" autoMapping="true">
+		<result column="chnl_id" property="id"/>
+		<result column="chnl_nm" property="name"/>
+		<result column="track_cnt" property="trackCount"/>
+		<result column="chnl_play_tm" property="playTime"/>
+		<association column="{albumId=album_id}" property="album" javaType="AlbumDto"  
+		select="selectAlbum" autoMapping="true" />
+		<association column="{chId=chnl_id}" property="genre" javaType="GenreDto"  
+		select="selectGenre" autoMapping="true" />
+		<collection column="{chId=chnl_id,nums=limit_number}" property="trackList" javaType="java.util.ArrayList" ofType="MusicDto"  
+		select="selectHottestWeeklyMusic" autoMapping="true" />
+	</resultMap>
+	<select id="selectHottestWeekly" parameterType="Long" resultMap="hottestWeeklyMap">
+		select 
+			chnl.chnl_id, chnl.chnl_nm, #{limitNumber} as limit_number, chnl.chnl_play_tm, chnl.track_cnt, chnl.album_id
+		from 
+			tb_chnl as chnl
+		where 
+			chnl.chnl_id = #{channelId} and chnl.disp_status_type = 'Y'  
+	</select>
+	<select id="selectAlbum" parameterType="java.util.Map" resultMap="albumMap">
+    	select 
+    		album_id, title 
+    	from 
+    		ted_album 
+    	where 
+    		album_id = #{albumId}
+	</select>
+	<select id="selectGenre" parameterType="java.util.Map" resultMap="genreMap">
+		select 
+    		gen.genre_id, gen.genre_nm, gen.genre_type
+		from 
+    		tb_genre as gen 
+		inner join 
+    		tb_map_genre_chnl as gen_chnl on gen.genre_id=gen_chnl.genre_id 
+		inner join 
+    		tb_chnl as chnl on gen_chnl.chnl_id=chnl.chnl_id 
+		where 
+			chnl.chnl_id = #{chId}
+		limit 1
+	</select>
+	<select id="selectHottestWeeklyMusic" parameterType="java.util.Map" resultMap="musicMap">
+		select 
+			chnl_trk.track_sn, trk.track_id, trk.track_nm, trk.track_play_tm, trk.adult_auth_need_track_yn, trk.agency_id, trk.title_yn, trk.album_id 
+		from 
+			tb_map_chnl_track as chnl_trk
+    	inner join 
+    		tb_track as trk on chnl_trk.track_id = trk.track_id AND trk.disp_status_yn = 'Y'  
+		where 
+			chnl_trk.chnl_id = #{chId}
+		order by 
+			chnl_trk.track_sn asc 
+		limit #{nums}
+	</select>
+    
+</mapper>

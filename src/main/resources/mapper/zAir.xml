@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bysssss.goinmul.api.model.mysql.air">
+
+	<select id="selectStatsHistory" parameterType="java.util.Map" resultType="StatsData">
+		SELECT 
+            stats.* , th.min , th.max , bm.bookmark_yn 
+        FROM 
+            tb_airmon_stats_history as stats
+		LEFT JOIN 
+        	tb_airmon_threshold as th ON stats.biz_id = th.biz_id AND stats.sensor_id = th.sensor_id AND stats.sensor_type = th.sensor_type
+        LEFT JOIN 
+        	tb_airmon_bookmark as bm ON stats.biz_id = bm.biz_id AND stats.sensor_id = bm.sensor_id AND stats.sensor_type = bm.sensor_type
+        WHERE 
+            stats.sensor_id = #{sensorId} AND stats.sensor_type = #{sensorType} AND stats.observe_at BETWEEN #{fromAt} AND #{toAt}
+        ORDER BY
+			stats.observe_at asc 
+    </select>
+    
+    <select id="selectStatsHistoryLatest" parameterType="java.util.Map" resultType="StatsData">
+		SELECT 
+            stats.* , th.min , th.max , bm.bookmark_yn 
+        FROM 
+            tb_airmon_stats_history as stats 
+		LEFT JOIN 
+        	tb_airmon_threshold as th ON stats.biz_id = th.biz_id AND stats.sensor_id = th.sensor_id AND stats.sensor_type = th.sensor_type
+        LEFT JOIN 
+        	tb_airmon_bookmark as bm ON stats.biz_id = bm.biz_id AND stats.sensor_id = bm.sensor_id AND stats.sensor_type = bm.sensor_type
+        WHERE 
+            stats.sensor_id = #{sensorId} AND stats.sensor_type = #{sensorType} AND 
+            stats.observe_at = (SELECT observe_at FROM tb_airmon_stats_history WHERE sensor_id = #{sensorId} AND sensor_type = #{sensorType} ORDER BY observe_at desc LIMIT 1) 
+    </select>
+    
+    <select id="selectStatusHistory" parameterType="java.util.Map" resultType="StatusData">
+		SELECT 
+            B.SEQ, B.STATUS_AT, B.BIZ_ID, B.SENSOR_ID,
+			A.SENSOR_NAME, B.ADDRESS, B.VALUE_BATTERY,
+			B.VALUE_PM1, B.VALUE_PM25, B.VALUE_PM10,
+			B.VALUE_TEMPERATURE, B.VALUE_HUMIDITY, B.OBSERVE_AT,
+			B.CYCLE, B.LAT, B.LON, B.RADIUS, B.NATION_YN,
+			B.ACTIVE_YN, B.CREATE_AT, B.UPDATE_AT
+        FROM 
+        	tb_airmon_status_history B
+		inner join tb_airmon_biz_sens_map A on B.sensor_id = A.sensor_id
+        WHERE
+            B.status_at = #{statusAt} AND (B.biz_id = #{bizId} OR B.biz_id = #{nationId})
+        ORDER BY
+			B.sensor_id asc
+    </select>
+    
+    <select id="selectStatusHistoryLatest" parameterType="java.util.Map" resultType="StatusData">
+		SELECT
+			B.SEQ, B.STATUS_AT, 
+			A.BIZ_ID, A.SENSOR_ID, A.SENSOR_NAME, 
+			B.ADDRESS, B.VALUE_BATTERY,
+			B.VALUE_PM1, B.VALUE_PM25, B.VALUE_PM10,
+			B.VALUE_TEMPERATURE, B.VALUE_HUMIDITY, B.OBSERVE_AT,
+			B.CYCLE, B.LAT, B.LON, B.RADIUS, B.NATION_YN,
+			B.ACTIVE_YN, B.CREATE_AT, B.UPDATE_AT
+        FROM (
+			SELECT 
+        		* 
+        	FROM 
+        		tb_airmon_biz_sens_map 
+        	WHERE
+        		biz_id = #{bizId} OR biz_id = #{nationId} 
+        	ORDER BY 
+        		sensor_id asc
+		) as A
+		LEFT JOIN tb_airmon_status_history as B ON B.seq = (
+			select seq from tb_airmon_status_history as C where C.biz_id=A.biz_id and C.sensor_id=A.sensor_id and C.sensor_name is not null order by seq desc limit 1)
+    </select>
+	
+    
+</mapper>
