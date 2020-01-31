@@ -26,6 +26,19 @@
 	</plugins>
 	<finalName>goinmul-api</finalName>
   </build>
+  
+  <repositories>
+  	<!-- repository>
+		<id>3rdparty</id>
+		<name>3rdparty</name>
+		<url>http://nexus.skplanet.com/repository/team-pfdev2-3rdparty/</url>
+	</repository -->
+	<!-- repository>
+		<id>in-project</id>
+    	<name>in-project</name>
+    	<url>file://${project.basedir}/lib/</url>
+	</repository -->
+ </repositories>
  
  <parent>
 	<groupId>org.springframework.boot</groupId>
@@ -101,6 +114,19 @@
 		<groupId>org.mybatis</groupId>
 		<artifactId>mybatis-typehandlers-jsr310</artifactId>
 		<version>1.0.2</version>
+	</dependency>
+	
+	<!-- https://mvnrepository.com/artifact/com.auth0/java-jwt 
+	<dependency>
+	    <groupId>com.auth0</groupId>
+	    <artifactId>java-jwt</artifactId>
+	    <version>3.9.0</version>
+	</dependency> -->
+	<!-- https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt -->
+	<dependency>
+    	<groupId>io.jsonwebtoken</groupId>
+    	<artifactId>jjwt</artifactId>
+    	<version>0.9.1</version>
 	</dependency>
 	
 	<dependency>

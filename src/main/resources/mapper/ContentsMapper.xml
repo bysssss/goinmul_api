@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bysssss.goinmul.api.model.mysql.contents.mapper.ContentsMapper">
+	
+	<select id="selectContentsListAll" resultType="com.bysssss.goinmul.api.model.mysql.contents.data.ContentsData">
+		SELECT 
+            * 
+        FROM 
+            tb_test_contents 
+    </select>
+    
+	<select id="selectContents" parameterType="java.util.Map" resultType="com.bysssss.goinmul.api.model.mysql.contents.data.ContentsData">
+		SELECT 
+            * 
+        FROM 
+            tb_test_contents 
+        WHERE
+        	seq = #{seq}
+    </select>
+    
+    <insert id="insertContents" parameterType="com.bysssss.goinmul.api.model.mysql.contents.data.ContentsData" useGeneratedKeys="true" keyColumn="SEQ" keyProperty="data.seq">
+		INSERT INTO 
+			tb_test_contents (MEMBER_SEQ, CONTENTS_TITLE, CONTENTS_DESC, TEST_INT, TEST_DBL) 
+		VALUES ( 
+			#{data.memberSeq},
+			#{data.contentsTitle},
+			#{data.contentsDesc},
+			#{data.testInt},
+			#{data.testDbl}
+		)
+    </insert>
+    
+    <delete id="deleteContents" parameterType="java.util.Map">
+		DELETE FROM 
+            tb_test_contents 
+        WHERE 
+        	seq = #{seq}
+    </delete>
+    
+</mapper>

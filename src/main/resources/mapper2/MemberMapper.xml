@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bysssss.goinmul.api.model.mysql2.member.mapper.MemberMapper">
+	
+	<resultMap type="com.bysssss.goinmul.api.model.mysql2.member.data.MemberData" id="MemberData">
+		<result column="SEQ" property="seq"/>
+		<result column="MEMBER_ID" property="memberId"/>
+		<result column="MEMBER_PW" property="memberPw" typeHandler="com.bysssss.goinmul.api.model.mysql2.member.typehandler.PasswordTypeHandler"/>
+		<result column="MEMBER_CD" property="memberCd"/>
+		<result column="MEMBER_TYPE" property="memberType"/>
+		<result column="MEMBER_NICKNAME" property="memberNickname"/>
+		<result column="MEMBER_THUMBNAIL_URL" property="memberThumbnailUrl"/>
+		<result column="MEMBER_SEX" property="memberSex"/>
+		<result column="MEMBER_INFO" property="memberInfo"/>
+		<result column="CELLPHONE" property="cellphone" typeHandler="com.bysssss.goinmul.api.model.mysql2.member.typehandler.PrivacyTypeHandler"/>
+		<result column="TELEPHONE" property="telephone"/>
+		<result column="PASSWORD_AT" property="passwordAt"/>
+		<result column="CREATE_AT" property="createAt"/>
+		<result column="UPDATE_AT" property="updateAt"/>
+	</resultMap>
+	
+	<select id="selectMember" parameterType="java.util.Map" resultMap="MemberData">
+		SELECT 
+            * 
+        FROM 
+            tb_test_member 
+        WHERE
+        	seq = #{seq}
+    </select>
+    
+    <select id="selectMemberById" parameterType="java.util.Map" resultMap="MemberData">
+		SELECT 
+            * 
+        FROM 
+            tb_test_member 
+        WHERE
+        	member_id = #{memberId}
+    </select>
+    
+    <select id="selectMemberByIdPw" parameterType="java.util.Map" resultMap="MemberData">
+		SELECT 
+            * 
+        FROM 
+            tb_test_member 
+        WHERE
+        	member_id = #{memberId} AND member_pw = #{memberPw, typeHandler=com.bysssss.goinmul.api.model.mysql2.member.typehandler.PasswordTypeHandler}
+    </select>
+    
+    <insert id="insertMember" parameterType="com.bysssss.goinmul.api.model.mysql2.member.data.MemberData" useGeneratedKeys="true" keyColumn="SEQ" keyProperty="data.seq">
+		INSERT INTO 
+			tb_test_member (MEMBER_ID, MEMBER_PW, MEMBER_NICKNAME, CELLPHONE, TELEPHONE) 
+		VALUES ( 
+			#{data.memberId},
+			#{data.memberPw, typeHandler=com.bysssss.goinmul.api.model.mysql2.member.typehandler.PasswordTypeHandler},
+			#{data.memberNickname},
+			#{data.cellphone, typeHandler=com.bysssss.goinmul.api.model.mysql2.member.typehandler.PrivacyTypeHandler},
+			#{data.telephone}
+		)
+    </insert>
+    
+</mapper>

@@ -3,35 +3,59 @@ spring:
   application:
     name: goinmul-api-local
   profiles: local
-  datasource:    url: jdbc:h2:mem:testdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: 
+  datasource:
+    hikari:
+      mysql:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        jdbc-url: jdbc:mysql://아이피:3306/데이터베이스?autoReconnect=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul&useSSL=false&zeroDateTimeBehavior=convertToNull
+        username: "admin"
+        password: "비번"
+      mysql2:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        jdbc-url: jdbc:mysql://아이피:3306/데이터베이스?autoReconnect=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul&useSSL=false&zeroDateTimeBehavior=convertToNull
+        username: "admin"
+        password: "비번"
+      #driver-class-name: org.h2.Driver
+      #url: jdbc:h2:mem:testdb
+      #username: 
+      #password: 
+    #tomcat:
+      #driver-class-name: com.mysql.cj.jdbc.Driver
+      #url: jdbc:mysql://아이피:3306/데이터베이스?autoReconnect=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul&useSSL=false&zeroDateTimeBehavior=convertToNull
+      #username: "admin"
+      #password: "비번"
+      #test-on-borrow: true
+      #test-while-idle:  true
+      #validation-query: "select 1"
+      #validation-query-timeout: 1
+      #validation-interval: 35000
   mvc:
     view:
       prefix: "/WEB-INF/jsp/"
       suffix: ".jsp"
-
+  redis:
+    password: "비번"
+    cluster:
+      nodes:
+        - 172.21.114.63:6379
+        - 172.21.112.63:6379
+        - 172.21.115.19:6379
+      maxRedirects: 3
+    timeout: 1000ms
+    
 logging:
   config: classpath:logback-local.xml
   
-privacy:
-  crypto:
-    use: false
+crypto:
+  key: "e50230c715187ef4" # "goinmul-local" 의 'MD5(32 Hexadecimal)' 앞 16바이트. (e50230c7-15187ef4-70df6320-d6578186)
+  password-flag: true
+  privacy-flag: true
 
 ---
 spring:
   application:
     name: goinmul-api-dev
   profiles: dev
-  mvc:
-    view:
-      prefix: "/WEB-INF/jsp/"
-      suffix: ".jsp"
 
 logging:
   config: classpath:logback-dev.xml
-
-privacy:
-  crypto:
-    use: false

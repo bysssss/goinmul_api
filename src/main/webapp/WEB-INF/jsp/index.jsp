@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html lang="UTF-8">
 <head>
-	<title>airmon</title>
+	<title>goinmul</title>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
 	<!-- meta http-equiv="refresh" content="0;url=https://www.refresh.com" / -->

@@ -59,9 +59,9 @@
 	<logger name="org.apache" level="INFO"/>
 	
 	<logger name="com.monnit" level="DEBUG"/>
-	<logger name="com.skp" level="INFO"/>
+	<logger name="com.bysssss" level="INFO"/>
 	
-	<!-- logger name="com.skp.airmon.api.XXX" level="INFO" additivity="false">
+	<!-- logger name="com.bysssss.goinmul.api.XXX" level="INFO" additivity="false">
 		<appender-ref ref="SIFT"/>
 	</logger -->
 </configuration>

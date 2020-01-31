@@ -41,14 +41,14 @@ public class App extends SpringBootServletInitializer {
 		}
     	log.info("onInitiate() : {}", sb.toString());
     }
-
+	
     @PreDestroy
     public void onTerminate() {
     	log.info("onTerminate() : appCtx={}", appCtx);
     	((ConfigurableApplicationContext)appCtx).close();
     	log.info("appContext.close()");
     }
-
+    
     @Override
     protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
         return application.sources(App.class); // web.xml
